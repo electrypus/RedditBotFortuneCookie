@@ -1,0 +1,77 @@
+import praw
+import pdb
+import re
+import os
+import random
+from botlogin import *
+from fortunes import fortunes
+
+# Muh Variables
+botLogList = '/home/user/Documents/Scripts/reddit/fortunecookie/botLogList.txt'
+loginDetails = '/home/user/Documents/Scripts/reddit/fortunecookie/botlogin.py'
+listOfFortunes = fortunes
+# Check if the file that contains our username exists
+if not os.path.isfile(loginDetails):
+    print "You must create a config file with your username and password."
+    print "Please call it botlogin.py and place in the folder this file is located."
+    exit(1)
+# User agent setup and login
+user_agent = ('Fortune cookie:v0.01')
+r = praw.Reddit(user_agent = user_agent)
+r.login(REDDIT_USERNAME, REDDIT_PASS)
+# Setup a logs of this bot's replies.
+if not os.path.isfile(botLogList):
+    botLogList = []
+else:
+    with open(botLogList, "r") as f:
+        botLogList = f.read()
+        botLogList = botLogList.split("\n")
+        botLogList = filter(None, botLogList)
+
+
+### Custom Bot Time ###
+
+# The following is to specify reddit generators. Such as 
+# comments, subreddit posts, user posts, user score...
+# Followed are some examples:
+#
+#			subreddit = r.get_subreddit('test')
+#			redditList = subreddit.get_hot(limit=5)
+#			redditList = surbeddit.get_comments(limit=5)
+#
+
+# Muh variabes
+subreddit = r.get_subreddit('cookiefortune')
+redditCommentList = subreddit.get_comments(limit=10)
+redditPostList = subreddit.get_new(limit=10)
+fortuneCookieIndex = random.randrange(len(listOfFortunes))
+yourFortune = listOfFortunes[fortuneCookieIndex]
+cookieText = 'fortune cookie, fortune cookie, tell me my fortune, cookie'
+
+# Check logs if already replied,
+# Then if fortune cookie is there.
+# If both are true, then post.
+# Comments first.
+for comment in redditCommentList:
+	if comment.id not in botLogList and cookieText in comment.body.lower():
+		comment.reply(yourFortune)
+		print('success!')
+		botLogList.append(comment.id)
+	else:
+		print(comment.body)
+		print('succes! Sort of.')
+# Then posts.
+for posts in redditPostList:
+	if posts.id not in botLogList:
+		if cookieText in posts.title.lower():
+			posts.add_comment(yourFortune)
+			print('success!')
+			botLogList.append(posts.id)
+		else:
+			print('success! Sort of..')
+
+# Send to log
+with open("botLogList", "w") as f:
+    for botLogList in botLogList:
+	    f.write(botLogList + "\n")
+print(botLogList)
